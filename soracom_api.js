@@ -4,6 +4,7 @@
 *	var Soracom = require('./soracom');
 *	var soracom = new Soracom({email: 'mail address',password:'password'});
 *	var soracom = new Soracom({authKeyId: 'keyId',authKey:'secret'});
+*	var soracom = new Soracom({userName:'user name',password:'password',operatorId:'Operator ID'}); // SAM User login
 */
 module.exports = function(obj) {
 	const https = require('https');
@@ -96,14 +97,21 @@ module.exports = function(obj) {
 					headers: node.session.headers
 				};
 				var req = https.request(options, (res) => {
+					let data = '';
 					res.setEncoding('utf8');
 					res.on('data', (chunk) => {
-						var res = JSON.parse(chunk);
-						callback(null,res);
+						data += chunk;
 					});
-					req.on('error', (e) => {
-						callback(e,null);
+					res.on('end', () => {
+						if(res.statusCode < 200 || res.statusCode > 299){
+							// API Error
+							callback(data,null);							
+						}else{
+							callback(null,data);
+						}
 					});
+				}).on('error', (e) => {
+					callback(e,null);
 				});
 				if(method !== 'GET') {
 					if(typeof params !== 'function') {
